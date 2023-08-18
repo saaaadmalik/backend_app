@@ -1,47 +1,59 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const { toJSON, paginate } = require("./plugins");
-const {roles} = require('./../config/roles')
+const { roles } = require('./../config/roles')
 const mongoDuplicateKeyError = require("../utils/mongoDuplicateKeyError");
 
 const userSchema = mongoose.Schema({
-    firstName:{
+    firstName: {
         type: String,
         required: true,
         trim: true,
     },
-    lastName:{
+    lastName: {
         type: String,
         required: true,
         trim: true,
     },
-    email:{
+    email: {
         type: String,
         required: true,
         unique: true,
         trim: true,
-        lowercase:true
+        lowercase: true
     },
-    role:{
+    role: {
         type: String,
         enum: roles,
         default: 'user',
 
     },
-    password:{
+    password: {
         type: String,
         required: true,
         trim: true,
     },
-    username:{
+    username: {
         type: String,
         required: true,
         trim: true,
-    }
+    },
+    createdBlogs:[
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Blog",
+        }
+    ],
+    favouriteBlogs:[
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Blog",
+        }
+    ]
 },
-{
-    timestamps: true,
-})
+    {
+        timestamps: true,
+    })
 
 // add plugin that converts mongoose to json
 userSchema.plugin(toJSON);
@@ -55,7 +67,7 @@ userSchema.plugin(paginate);
  */
 
 userSchema.statics.isEmailTaken = async function (email, excludeUserId) {
-    const user = await this.findOne({email, _id:{ $ne: excludeUserId}})
+    const user = await this.findOne({ email, _id: { $ne: excludeUserId } })
     return !!user
 }
 
@@ -70,9 +82,9 @@ userSchema.methods.isPasswordMatch = async function (password) {
     return bcrypt.compare(password, this.password)
 }
 
-userSchema.pre('save', async function (next){
+userSchema.pre('save', async function (next) {
     const user = this
-    if(user.isModified('password')){
+    if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 10)
     }
     next()

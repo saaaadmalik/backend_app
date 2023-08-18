@@ -1,16 +1,17 @@
 const httpStatus = require("http-status");
-const { Blog } = require("../models");
+const { Blog, User } = require("../models");
 const ApiError = require("../utils/ApiError");
-const config = require("./../config/config");
 
 /**
  * Create a blog
  * @param {Object} blogBody
- * @returns {Promise<Admin>}
+ * 
  */
 const createBlog = async (blogBody) => {
   try {
-    return await Blog.create(blogBody);
+    const createdBlog = await Blog.create(blogBody);
+    await User.findOneAndUpdate({ _id: blogBody.createdBy }, { $push: { createdBlogs: createdBlog._id } }, { new: true })
+    return createdBlog;
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
@@ -18,15 +19,8 @@ const createBlog = async (blogBody) => {
 
 const getAllBlog = async (filter) => {
   try {
-    const blogs = await Blog.find(filter);
-    if (blogs.length <= 0) {
-      return blogs;
-    }
-    blogs.forEach((data) => {
-      if (data?.featureImage) {
-        data.featureImage = config.rootPath + "/" + data.featureImage;
-      }
-    });
+    // const blogs = await Blog.find(filter);
+    const blogs = await Blog.paginate(filter, { populate: "createdBy,isFavouriteOf" });
     return blogs;
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
@@ -35,15 +29,10 @@ const getAllBlog = async (filter) => {
 
 const updateBlog = async (blogBody, blogId) => {
   try {
-    const result = await Blog.findByIdAndUpdate(
-      blogId,
-      { $set: blogBody },
-      { new: true }
-    );
-    if (!result) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "No blog found");
-    }
-    return result;
+    const blog = await getSingleBlog(blogId)
+    Object.assign(blog, blogBody)
+    await blog.save();
+    return blog;
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
@@ -51,49 +40,57 @@ const updateBlog = async (blogBody, blogId) => {
 
 const getSingleBlog = async (blogId) => {
   try {
+    // const blog = await Blog.findById(blogId);
+    const blog = await Blog.paginate({ _id: blogId }, { populate: "createdBy,isFavouriteOf" });
+    if (!blog) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "No blog found");
+    }
+    return blog.results[0];
+  } catch (error) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
+  }
+};
+
+const deleteBlog = async (blogId, userId) => {
+  try {
+    const blog = await getSingleBlog(blogId)
+    await blog.remove();
+
+    await User.findOneAndUpdate({ _id: userId }, { $pull: { createdBlogs: blogId } }, { new: true })
+
+    await User.updateMany({ favouriteBlogs: blogId }, { $pull: { favouriteBlogs: blogId } }, { new: true })
+
+    return blog;
+
+
+  } catch (error) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
+  }
+};
+
+const favouriteABlog = async (blogId, userId) => {
+  try {
     const blog = await Blog.findById(blogId);
-    if (!blog) {
+    if(!blog){
       throw new ApiError(httpStatus.BAD_REQUEST, "No blog found");
     }
-    if (blog?.featureImage) {
-      blog.featureImage = config.rootPath + "/" + blog.featureImage;
+
+    if (!blog.isFavouriteOf.includes(userId)) {
+      const updatedBlog = await Blog.findOneAndUpdate({ _id: blogId }, { $push: { isFavouriteOf: userId } }, { new: true })
+      await User.findOneAndUpdate({ _id: userId }, { $push: { favouriteBlogs: blogId } }, { new: true })
+      return updatedBlog;
+    } else {
+      const updatedBlog = await Blog.findOneAndUpdate({ _id: blogId }, { $pull: { isFavouriteOf: userId } }, { new: true })
+      await User.findOneAndUpdate({ _id: userId }, { $pull: { favouriteBlogs: blogId } }, { new: true })
+      return updatedBlog;
+
     }
-    return blog;
-  } catch (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
-  }
-};
 
-const deleteBlog = async (blogId) => {
-  try {
-    const blog = await Blog.findByIdAndRemove(blogId);
-    if (!blog) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "No blog found");
-    }
-    return blog;
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
-};
 
-const topFourBlogs = async () => {
-  try {
-    return await Blog.find({}).sort({ createdAt: -1 }).limit(4);
-  } catch (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
-  }
-};
-
-const randomBlogs = async () => {
-  try {
-    const blogs = await Blog.aggregate([
-      { $sample: { size: 4 } }, // Get four random document
-    ]);
-    return blogs;
-  } catch (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
-  }
-};
+}
 
 module.exports = {
   createBlog,
@@ -101,6 +98,6 @@ module.exports = {
   updateBlog,
   getSingleBlog,
   deleteBlog,
-  topFourBlogs,
-  randomBlogs,
+  favouriteABlog
+
 };

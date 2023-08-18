@@ -1,6 +1,6 @@
 const express = require("express");
 const validate = require("../middlewares/validate")
-const { requireSignin,restrict } = require("../middlewares/auth");
+const { requireSignin, restrict } = require("../middlewares/auth");
 const userAuthValidation = require("../validations/userAuth.validation")
 const { userAuthController } = require("../controllers")
 const router = express.Router();
@@ -23,8 +23,8 @@ router
     .route("/update/password/:userId")
     .patch(
         requireSignin,
-        restrict("manageUsers"),
         validate(userAuthValidation.updatePassword),
+        restrict("manageUsers"),
         userAuthController.updatePassword
     )
 

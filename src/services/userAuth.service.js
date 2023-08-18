@@ -2,7 +2,7 @@ const httpStatus = require("http-status");
 const { User } = require("../models");
 const ApiError = require("../utils/ApiError");
 const generateJwtToken = require("./../config/generateToken");
-const bcrypt = require("bcryptjs");
+
 
 /**
  * Create a user

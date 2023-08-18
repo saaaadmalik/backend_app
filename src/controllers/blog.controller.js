@@ -5,10 +5,6 @@ const ApiError = require("./../utils/ApiError");
 
 const createBlog = catchAsync(async (req, res) => {
   let body = req.body;
-  if (!req.file) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Feature image is required");
-  }
-  body.featureImage = req.file.filename;
   const { _id } = req.user;
   body.createdBy = _id;
   const blog = await blogService.createBlog(body);
@@ -31,9 +27,6 @@ const getAllBlog = catchAsync(async (req, res) => {
 
 const updateBlog = catchAsync(async (req, res) => {
   let body = req.body;
-  if (req.file) {
-    body.featureImage = req.file.filename;
-  }
   const { blogId } = req.params;
   const blog = await blogService.updateBlog(body, blogId);
   res.status(httpStatus.CREATED).send(blog);
@@ -47,19 +40,19 @@ const getSingleBlog = catchAsync(async (req, res) => {
 
 const deleteBlog = catchAsync(async (req, res) => {
   const { blogId } = req.params;
-  const blog = await blogService.deleteBlog(blogId);
-  res.status(httpStatus.CREATED).send(blog);
+  const userId = req.user._id;
+  const blog = await blogService.deleteBlog(blogId,userId);
+  res.status(httpStatus.NO_CONTENT).send();
 });
 
-const topFourBlogs = catchAsync(async (req, res) => {
-  const blog = await blogService.topFourBlogs();
+const favouriteABlog = catchAsync(async (req,res)=>{
+  const {blogId} = req.params;
+  const { _id } = req.user;
+  const blog = await blogService.favouriteABlog(blogId,_id);
   res.status(httpStatus.CREATED).send(blog);
-});
 
-const randomBlogs = catchAsync(async (req, res) => {
-  const blog = await blogService.randomBlogs();
-  res.status(httpStatus.CREATED).send(blog);
-});
+})
+
 
 module.exports = {
   createBlog,
@@ -67,6 +60,5 @@ module.exports = {
   updateBlog,
   getSingleBlog,
   deleteBlog,
-  topFourBlogs,
-  randomBlogs,
+  favouriteABlog
 };

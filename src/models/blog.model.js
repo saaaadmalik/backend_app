@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { toJSON, paginate } = require("./plugins");
+const mongoDuplicateKeyError = require("../utils/mongoDuplicateKeyError");
 
 const blogSchema = mongoose.Schema(
   {
@@ -11,10 +12,7 @@ const blogSchema = mongoose.Schema(
     postedDate: {
       type: Date,
       default: new Date(),
-    },
-    featureImage: {
-      type: String,
-      required: true,
+      immutable: true,
     },
     description: {
       type: String,
@@ -22,9 +20,15 @@ const blogSchema = mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      ref: "User",
       required: true,
     },
+    isFavouriteOf: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      }
+    ]
   },
   {
     timestamps: true,
@@ -34,6 +38,8 @@ const blogSchema = mongoose.Schema(
 // add plugin that converts mongoose to json
 blogSchema.plugin(toJSON);
 blogSchema.plugin(paginate);
+
+mongoDuplicateKeyError(blogSchema)
 
 const Blog = mongoose.model("Blog", blogSchema);
 

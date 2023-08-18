@@ -4,7 +4,6 @@ const { objectId } = require("./custom.validation");
 const createBlog = {
   body: Joi.object().keys({
     title: Joi.string().required(),
-    postedDate: Joi.date().required(),
     description: Joi.string().required(),
   }),
 };
@@ -15,7 +14,6 @@ const updateBlog = {
   }),
   body: Joi.object().keys({
     title: Joi.string().optional(),
-    postedDate: Joi.date().optional(),
     description: Joi.string().optional(),
   }),
 };

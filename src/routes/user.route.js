@@ -20,13 +20,13 @@ router
         userController.getUserById)
     .patch(
         requireSignin,
-        restrict("manageUsers"),
         validate(userValidation.updateUser),
+        restrict("manageUsers"),
         userController.updateUser)
     .delete(
         requireSignin,
-        restrict("manageUsers"),
         validate(userValidation.deleteUser),
+        restrict("manageUsers"),
         userController.deleteUser)
 
 module.exports = router;

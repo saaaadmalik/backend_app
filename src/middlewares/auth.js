@@ -2,8 +2,8 @@ const httpStatus = require("http-status");
 const jwt = require("jsonwebtoken");
 const ApiError = require("./../utils/ApiError");
 const config = require("./../config/config");
-const { Admin } = require("./../models");
-const {roleRights} = require("../config/roles")
+const { Blog, Appointment } = require("../models");
+const { roleRights } = require("../config/roles")
 
 const requireSignin = (req, res, next) => {
   if (req.headers.authorization) {
@@ -14,6 +14,7 @@ const requireSignin = (req, res, next) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Authorization required");
   }
   next();
+
 };
 
 const authMiddleware = (req, res, next) => {
@@ -23,12 +24,12 @@ const authMiddleware = (req, res, next) => {
   next();
 };
 
-const restrict = (...requiredRights) =>{
-  return (req,res,next) =>{
-    if(requiredRights.length){
+const restrict = (...requiredRights) => {
+  return (req, res, next) => {
+    if (requiredRights.length) {
       const userRights = roleRights.get(req.user.role)
       const hasRequiredRights = requiredRights.every((requiredRight) => userRights.includes(requiredRight))
-      if(!hasRequiredRights && req.params.userId !== req.user._id){
+      if (!hasRequiredRights && req.params.userId !== req.user._id) {
         throw new ApiError(httpStatus.UNAUTHORIZED, 'Forbidden')
       }
 
@@ -39,8 +40,50 @@ const restrict = (...requiredRights) =>{
 
 }
 
+const blogRestriction = (...requiredRights) => {
+  return async (req, res, next) => {
+    try {
+      if (requiredRights.length) {
+        const userRights = roleRights.get(req.user.role)
+        const hasRequiredRights = requiredRights.every((requiredRight) => userRights.includes(requiredRight))
+        const blog = await Blog.findById(req.params.blogId)
+        if (!blog) {
+          throw new ApiError(httpStatus.NOT_FOUND, 'Blog not found')
+        }
+        if (!hasRequiredRights && blog.createdBy.toString() !== req.user._id) {
+         throw new ApiError(httpStatus.UNAUTHORIZED, 'Forbidden')
+        }
+      }
+      next()
+
+    } catch (error) {
+      next(error)
+
+    }
+
+  }
+}
+
+const appointmentRestriction = async (req,res,next) =>{
+  try {
+    const appointment = await Appointment.findById(req.params.appointmentId)
+    if(!appointment){
+      throw new ApiError(httpStatus.NOT_FOUND, 'Appointment not found')
+    }
+    if(appointment.userId.toString() !== req.user._id){
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Forbidden')
+    }
+    next()
+  } catch (error) {
+    next(error)
+  }
+} 
+
+
 module.exports = {
   requireSignin,
   authMiddleware,
-  restrict
+  restrict,
+  blogRestriction,
+  appointmentRestriction
 };

@@ -15,7 +15,8 @@ const ApiError = require("../utils/ApiError");
 
 const getUsers = async (filter, options) => {
     try {
-        const users = await User.paginate(filter, options);
+        const projection = { password: 0 }
+        const users = await User.paginate(filter, options, projection)
         return users;
     } catch (error) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
@@ -30,11 +31,14 @@ const getUsers = async (filter, options) => {
 
 const getUserById = async (userId) => {
     try {
-        const user = await User.findById(userId);
-        if (!user) {
+        // const user = await User.findById(userId)
+        projection = { password: 0 }
+        const user = await User.paginate({_id:userId}, {populate:"createdBlogs,favouriteBlogs"}, projection)
+        if (!user.results || user.results.length===0) {
             throw new ApiError(httpStatus.BAD_REQUEST, "No user found");
         }
-        return user;
+ 
+        return user.results[0];
     } catch (error) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
     }

@@ -15,6 +15,13 @@ const getUserById = {
     params:Joi.object().keys({
         userId:Joi.string().required().custom(objectId)
     }),
+    query: Joi.object().keys({
+        username: Joi.string(),
+        role: Joi.string(),
+        sortBy: Joi.string(),
+        limit: Joi.number().integer(),
+        page: Joi.number().integer(),
+    })
 }
 
 const updateUser = {

@@ -6,6 +6,7 @@ const pick = require("../utils/pick");
 const getUsers = catchAsync(async(req,res)=>{
     const filter = pick(req.query, ["username", "role"]);
     const options = pick(req.query, ["sortBy", "limit", "page"]);
+    options.populate ="createdBlogs,favouriteBlogs"
     const result = await userService.getUsers(filter,options);
     res.status(httpStatus.CREATED).send(result);
 

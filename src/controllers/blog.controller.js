@@ -2,8 +2,6 @@ const httpStatus = require("http-status");
 const catchAsync = require("../utils/catchAsync");
 const { blogService } = require("../services");
 const ApiError = require("./../utils/ApiError");
-const puppeteer = require("puppeteer");
-const logger = require("./../config/logger");
 
 const createBlog = catchAsync(async (req, res) => {
   let body = req.body;
@@ -55,40 +53,6 @@ const favouriteABlog = catchAsync(async (req,res)=>{
 
 })
 
-const getCandaApiRates = catchAsync(async (req, res) => {
-  try {
-    const browser = await puppeteer.launch({ headless: "new" });
-    const page = await browser.newPage();
-    try {
-      await page.goto("https://www.oakbankcapital.com/");
-      const primeRateText = await page.waitForXPath(
-        "/html/body/div/main/header/div[1]/div/div/div/div[2]/div[2]/span/div/div[2]/div[2]/div[2]/a"
-      );
-      const fiveYearText = await page.waitForXPath(
-        "/html/body/div/main/header/div[1]/div/div/div/div[2]/div[2]/span/div/div[2]/div[3]/div[2]/a"
-      );
-      const tenYearText = await page.waitForXPath(
-        "/html/body/div/main/header/div[1]/div/div/div/div[2]/div[2]/span/div/div[2]/div[4]/div[2]/a"
-      );
-      const primeRate = await primeRateText.evaluate(
-        (node) => node.textContent
-      );
-      const fiveYear = await fiveYearText.evaluate((node) => node.textContent);
-      const tenYear = await tenYearText.evaluate((node) => node.textContent);
-      let finalResult = {
-        primeRate: primeRate,
-        fiveYear: fiveYear,
-        tenYear: tenYear,
-      };
-      res.status(httpStatus.CREATED).send(finalResult);
-    } finally {
-      await browser.close();
-    }
-  } catch (error) {
-    logger.info(error);
-    res.status(httpStatus.INTERNAL_SERVER_ERROR).send(error);
-  }
-});
 
 
 module.exports = {
@@ -98,5 +62,4 @@ module.exports = {
   getSingleBlog,
   deleteBlog,
   favouriteABlog,
-  getCandaApiRates
 };

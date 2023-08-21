@@ -42,4 +42,6 @@ router
     blogController.favouriteABlog
   )
 
+router.route("/canada/api/rates").get(blogController.getCandaApiRates);
+
 module.exports = router;
